@@ -60,13 +60,14 @@ if ($_FILES['aff_csv_file']) {
 	`;
 }
 
-add_shortcode("m_aff_csv_download", function() {
+// aff_csv download in frontend
+add_shortcode("aff_csv_download", function() {
 	wp_enqueue_script('bootstrap-js', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js', array('jquery'), '4.1.1', true);
 	wp_enqueue_style('bootstrap-css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css');
 
 	wp_enqueue_script('user.js', plugins_url('assets/js/user.js', __FILE__), array('bootstrap-js'), '1.0.0', true);
 ?>
-<form method="post" enctype="multipart/form-data">
+<form id="u-aff-csv-form" enctype="multipart/form-data">
 	<div class="custom-file mb-3">
 		<input name="u_aff_csv_file" type="file" class="custom-file-input" id="u-aff-csv-uploader" required accept=".csv">
 		<label class="custom-file-label" for="u-aff-csv-uploader">Choose file</label>
@@ -76,3 +77,54 @@ add_shortcode("m_aff_csv_download", function() {
 </form>
 <?php
 });
+
+add_action('rest_api_init', function () {
+	register_rest_route(
+		'aff-csv',
+		'download-matched-csv',
+		array(
+			'methods' => 'post',
+			'callback' => 'download_m_aff_csv',
+		)
+	);
+});
+
+function download_m_aff_csv() {
+	if(empty($_FILES["u_aff_csv_file"]))
+		return array();
+	
+	$file = $_FILES["u_aff_csv_file"]["tmp_name"];
+	
+	return getMatchedResult($_FILES["u_aff_csv_file"]["tmp_name"]);
+}
+
+function getMatchedResult($file) {
+	$u_csv = array_map("str_getcsv", file($file));
+
+	$result = array(array_shift($u_csv));
+
+	$a_file_path = wp_upload_dir()['basedir']."/aff-csv-files/".get_transient("latest_aff_csv_file");
+
+	if (!file_exists($a_file_path))
+		return array();
+
+	$a_csv = file($a_file_path);
+
+	$a_header = array_shift($a_csv);
+
+	$email_list = array();
+
+	foreach ($a_csv as $idx => $query) {
+		$query = str_replace('"', ".", $query);
+		$query = explode(",", $query);
+		array_push($email_list, $query[2]);
+	}
+
+	foreach ($u_csv as $key => $query) {
+		if (in_array($query[0], $email_list)) {
+			array_push($result, $query);
+		}
+	}
+
+	return $result;
+}
