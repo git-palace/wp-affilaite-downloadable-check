@@ -23,26 +23,73 @@ function aff_csv_upload_view() {
 	wp_enqueue_script('admin.js', plugins_url('assets/js/admin.js', __FILE__), array('bootstrap-js'), '1.0.0', true);
 ?>
 <div class="container-fluid">
-	<div class="col-3 my-5">
-		<form method="post" enctype="multipart/form-data">
-			<div class="custom-file mb-3">
-				<input name="aff_csv_file" type="file" class="custom-file-input" id="aff-csv-uploader" required accept=".csv">
-				<label class="custom-file-label" for="aff-csv-uploader"><?php echo get_transient("latest_aff_csv_file") ? get_transient("latest_aff_csv_file") : "Choose file"; ?></label>
-			</div>
+	<div class="row">
+		<div class="col-3 my-5">
+			<form method="post" enctype="multipart/form-data">
+				<div class="custom-file mb-3">
+					<input name="aff_csv_file" type="file" class="custom-file-input" id="aff-csv-uploader" required accept=".csv">
+					<label class="custom-file-label" for="aff-csv-uploader"><?php echo get_transient("latest_aff_csv_file") ? get_transient("latest_aff_csv_file") : "Choose file"; ?></label>
+				</div>
 
-			<button class="btn btn-primary" type="submit">Upload</button>
-		</form>
+				<button class="btn btn-primary" type="submit">Upload</button>
+			</form>
+		</div>
+	</div>
+
+	<div class="row flex-column">
+		<h3 class="col-4">Download History</h3>
+		<table class="col-3" border="1">
+			<thead>
+				<tr>
+					<th class="text-center">No</th>
+					<th class="text-center">User Email</th>
+					<th class="text-center">Download link</th>
+				</tr>
+				<tbody>		
+					<?php
+						$d_list = get_transient("d_aff_csv_list");
+						if($d_list && is_array($d_list) && !empty($d_list)) {
+							$idx = 0;
+							foreach ($d_list as $user_id => $file_arr) {
+								foreach ($file_arr as $filename) {
+									$idx++;
+
+									$target_file = implode("/", array(
+										wp_upload_dir()['baseurl'],
+										"aff-csv-files/downloaded",
+										get_current_user_id(),
+										$filename
+									));
+
+									echo '<tr>';
+									echo '<td class="text-center">'.$idx.'</td>';
+									$user = get_user_by('id', $user_id);
+									echo '<td class="text-center">'.$user->user_email.'</td>';
+									echo '<td class="text-center"><a href="'.$target_file.'">Click here to download</a></td>';
+									echo '</tr>';
+								}
+							}
+
+						} else {
+							echo '<tr><td class="text-center" colspan=3>No History</td></tr>';
+						}
+					?>
+				</tbody>
+			</thead>
+		</table>
 	</div>
 </div>
 <?php
 }
 
 if ($_FILES['aff_csv_file']) {
-	$target_dir = wp_upload_dir()['basedir']."/aff-csv-files/";
-	$filename = uniqid().".csv";
+	$target_dir = wp_upload_dir()['basedir']."/aff-csv-files/uploaded/";
+
 	if (!file_exists($target_dir)) {
 		mkdir($target_dir, 0777, true);
 	}
+
+	$filename = uniqid().".csv";
 
 	$target_file = $target_dir.$filename;
 
@@ -69,6 +116,9 @@ add_shortcode("aff_csv_download", function() {
 ?>
 <form id="u-aff-csv-form" enctype="multipart/form-data">
 	<div class="custom-file mb-3">
+		<?php if(is_user_logged_in()): ?>
+			<input type="hidden" name="user_id" value="<?php echo get_current_user_id(); ?>">
+		<?php endif; ?>
 		<input name="u_aff_csv_file" type="file" class="custom-file-input" id="u-aff-csv-uploader" required accept=".csv">
 		<label class="custom-file-label" for="u-aff-csv-uploader">Choose file</label>
 	</div>
@@ -94,8 +144,13 @@ function download_m_aff_csv() {
 		return array();
 	
 	$file = $_FILES["u_aff_csv_file"]["tmp_name"];
-	
-	return getMatchedResult($_FILES["u_aff_csv_file"]["tmp_name"]);
+
+	$result =  getMatchedResult($_FILES["u_aff_csv_file"]["tmp_name"]);
+
+	if(!empty($_POST['user_id']))
+		upload_downloaded_csv($result, $_POST['user_id']);
+
+	return $result;
 }
 
 function getMatchedResult($file) {
@@ -103,7 +158,7 @@ function getMatchedResult($file) {
 
 	$result = array(array_shift($u_csv));
 
-	$a_file_path = wp_upload_dir()['basedir']."/aff-csv-files/".get_transient("latest_aff_csv_file");
+	$a_file_path = wp_upload_dir()['basedir']."/aff-csv-files/uploaded/".get_transient("latest_aff_csv_file");
 
 	if (!file_exists($a_file_path))
 		return array();
@@ -127,4 +182,37 @@ function getMatchedResult($file) {
 	}
 
 	return $result;
+}
+
+function upload_downloaded_csv($fields, $user_id) {
+	$target_dir = implode("/", array(
+		wp_upload_dir()['basedir'],
+		"aff-csv-files/downloaded",
+		$user_id,
+		""
+	));
+	
+	if (!file_exists($target_dir)) {
+		mkdir($target_dir, 0777, true);
+	}
+
+	$filename = time().".csv";
+	$target_file = $target_dir.$filename;
+
+	$fp = fopen($target_file, "w");
+
+	foreach ($fields as $field)
+		fputcsv($fp, $field);
+
+	fclose($fp);
+
+	$d_list = get_transient("d_aff_csv_list");
+
+	if ($d_list && is_array($d_list[$user_id])) {
+		array_push($d_list[$user_id], $filename);
+	} else {
+		$d_list[$user_id] = array($filename);
+	}
+
+	set_transient("d_aff_csv_list", $d_list);
 }
