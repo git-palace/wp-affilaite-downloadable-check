@@ -36,8 +36,40 @@ function aff_csv_upload_view() {
 		</div>
 	</div>
 
+	<?php
+		$d_list = get_transient("d_aff_csv_list");
+		$td_tpl_list = array();
+		if($d_list && is_array($d_list) && !empty($d_list)) {
+			$idx = 0;
+			foreach ($d_list as $user_id => $file_arr) {
+				foreach ($file_arr as $filename) {
+					$idx++;
+
+					$target_file = implode("/", array(
+						wp_upload_dir()['baseurl'],
+						"aff-csv-files/downloaded",
+						get_current_user_id(),
+						$filename
+					));
+
+					$tpl= '<tr>';
+					$tpl .= '<td class="text-center">'.$idx.'</td>';
+					$tpl .= get_user_by('id', $user_id);
+					$tpl .= '<td class="text-center">'.$user->user_email.'</td>';
+					$tpl .='<td class="text-center"><a href="'.$target_file.'">Click here to download</a></td>';
+					$tpl .= '</tr>';
+
+					array_push($td_tpl_list, $tpl);
+				}
+			}
+
+		}
+	?>
 	<div class="row flex-column">
 		<h3 class="col-4">Download History</h3>
+		<?php if (count($td_tpl_list)): ?>
+			<p><?php echo count($td_tpl_list);?> records downloaded.</p>
+		<?php endif; ?>
 		<table class="col-3" border="1">
 			<thead>
 				<tr>
@@ -45,35 +77,11 @@ function aff_csv_upload_view() {
 					<th class="text-center">User Email</th>
 					<th class="text-center">Download link</th>
 				</tr>
-				<tbody>		
-					<?php
-						$d_list = get_transient("d_aff_csv_list");
-						if($d_list && is_array($d_list) && !empty($d_list)) {
-							$idx = 0;
-							foreach ($d_list as $user_id => $file_arr) {
-								foreach ($file_arr as $filename) {
-									$idx++;
-
-									$target_file = implode("/", array(
-										wp_upload_dir()['baseurl'],
-										"aff-csv-files/downloaded",
-										get_current_user_id(),
-										$filename
-									));
-
-									echo '<tr>';
-									echo '<td class="text-center">'.$idx.'</td>';
-									$user = get_user_by('id', $user_id);
-									echo '<td class="text-center">'.$user->user_email.'</td>';
-									echo '<td class="text-center"><a href="'.$target_file.'">Click here to download</a></td>';
-									echo '</tr>';
-								}
-							}
-
-						} else {
-							echo '<tr><td class="text-center" colspan=3>No History</td></tr>';
-						}
-					?>
+				<tbody>
+					<?php foreach ($td_tpl_list as $td_tpl) echo $td_tpl; ?>
+					<?php if (!count($td_tpl_list)) : ?>
+						<tr><td class="text-center" colspan=3>No History</td></tr>
+					<?php endif;?>
 				</tbody>
 			</thead>
 		</table>
