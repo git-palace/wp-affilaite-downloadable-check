@@ -54,7 +54,7 @@ function aff_csv_upload_view() {
 
 					$tpl= '<tr>';
 					$tpl .= '<td class="text-center">'.$idx.'</td>';
-					$tpl .= get_user_by('id', $user_id);
+					$user = get_user_by('id', $user_id);
 					$tpl .= '<td class="text-center">'.$user->user_email.'</td>';
 					$tpl .='<td class="text-center"><a href="'.$target_file.'">Click here to download</a></td>';
 					$tpl .= '</tr>';
@@ -66,10 +66,13 @@ function aff_csv_upload_view() {
 		}
 	?>
 	<div class="row flex-column">
-		<h3 class="col-4">Download History</h3>
-		<?php if (count($td_tpl_list)): ?>
-			<p><?php echo count($td_tpl_list);?> records downloaded.</p>
-		<?php endif; ?>
+		<h3 class="col-4 d-flex">
+			Download History
+			<?php if (count($td_tpl_list)): ?>
+				<p class="mt-auto mb-1 ml-2">(&nbsp;<?php echo count($td_tpl_list);?> record(s) downloaded.&nbsp;)</p>
+			<?php endif; ?>
+		</h3>
+		
 		<table class="col-3" border="1">
 			<thead>
 				<tr>
