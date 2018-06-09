@@ -233,8 +233,6 @@ add_shortcode("aff_csv_download", function() {
 
 	<div id="uploaded-csv-review" class="row" style="overflow-x: auto;">
 	</div>
-
-	<button class="btn btn-primary mt-2" onclick="downloadCSV()">Download</button>
 </div>
 <?php
 });
