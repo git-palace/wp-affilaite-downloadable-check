@@ -28,8 +28,12 @@ function aff_csv_upload_view() {
 			<form method="post" enctype="multipart/form-data">
 				<div class="custom-file mb-3">
 					<input name="aff_csv_file" type="file" class="custom-file-input" id="aff-csv-uploader" required accept=".csv">
-					<label class="custom-file-label" for="aff-csv-uploader"><?php echo get_transient("latest_aff_csv_file") ? get_transient("latest_aff_csv_file") : "Choose file"; ?></label>
+					<label class="custom-file-label" for="aff-csv-uploader"><?php echo get_transient("latest_aff_csv_file") ? get_transient("latest_aff_csv_file")["filename"] : "Choose file"; ?></label>
 				</div>
+
+				<?php if (get_transient("latest_aff_csv_file")): ?>
+					<p><?php echo get_transient("latest_aff_csv_file")["r_count"]?> records uploaded.</p>
+				<?php endif; ?>
 
 				<button class="btn btn-primary" type="submit">Upload</button>
 			</form>
@@ -37,8 +41,55 @@ function aff_csv_upload_view() {
 	</div>
 
 	<?php
+		$h_csv_list = get_transient("history_aff_csv_file");
+		$td_tpl_list = array();
+		
+		if($h_csv_list && is_array($h_csv_list) && !empty($h_csv_list)) {
+			$idx = 0;
+			foreach ($h_csv_list as $item) {
+				$idx++;
+
+				$target_file = implode("/", array(
+					wp_upload_dir()['baseurl'],
+					"aff-csv-files/uploaded",
+					$item["filename"]
+				));
+
+				$tpl= '<tr>';
+				$tpl .= '<td class="text-center">'.$idx.'</td>';
+				$tpl .= '<td class="text-center">'.$item["r_count"].'</td>';
+				$tpl .= '<td class="text-center"><a href="'.$target_file.'">Click here to download</a></td>';
+				$tpl .= '</tr>';
+
+				array_push($td_tpl_list, $tpl);
+			}
+		}
+	?>
+
+	<div class="row flex-column mb-5">
+		<h3 class="col-4 d-flex">Upload History</h3>
+		
+		<table class="col-3" border="1">
+			<thead>
+				<tr>
+					<th class="text-center">No</th>
+					<th class="text-center">Records</th>
+					<th class="text-center">Uploaded link</th>
+				</tr>
+				<tbody>
+					<?php foreach ($td_tpl_list as $td_tpl) echo $td_tpl; ?>
+					<?php if (!count($td_tpl_list)) : ?>
+						<tr><td class="text-center" colspan=3>No History</td></tr>
+					<?php endif;?>
+				</tbody>
+			</thead>
+		</table>
+	</div>
+
+	<?php
 		$d_list = get_transient("d_aff_csv_list");
 		$td_tpl_list = array();
+
 		if($d_list && is_array($d_list) && !empty($d_list)) {
 			$idx = 0;
 			foreach ($d_list as $user_id => $file_arr) {
@@ -56,22 +107,16 @@ function aff_csv_upload_view() {
 					$tpl .= '<td class="text-center">'.$idx.'</td>';
 					$user = get_user_by('id', $user_id);
 					$tpl .= '<td class="text-center">'.$user->user_email.'</td>';
-					$tpl .='<td class="text-center"><a href="'.$target_file.'">Click here to download</a></td>';
+					$tpl .= '<td class="text-center"><a href="'.$target_file.'">Click here to download</a></td>';
 					$tpl .= '</tr>';
 
 					array_push($td_tpl_list, $tpl);
 				}
 			}
-
 		}
 	?>
 	<div class="row flex-column">
-		<h3 class="col-4 d-flex">
-			Download History
-			<?php if (count($td_tpl_list)): ?>
-				<p class="mt-auto mb-1 ml-2">(&nbsp;<?php echo count($td_tpl_list);?> record(s) downloaded.&nbsp;)</p>
-			<?php endif; ?>
-		</h3>
+		<h3 class="col-4 d-flex">Download History</h3>
 		
 		<table class="col-3" border="1">
 			<thead>
@@ -105,8 +150,27 @@ if ($_FILES['aff_csv_file']) {
 	$target_file = $target_dir.$filename;
 
 	if (!file_exists($target_file)) {
-		if (move_uploaded_file($_FILES["aff_csv_file"]["tmp_name"], $target_file)) {
-			set_transient("latest_aff_csv_file", $filename);
+		if (move_uploaded_file($_FILES["aff_csv_file"]["tmp_name"], $target_file)) {			
+			$records = array_map("str_getcsv", file($target_file));
+
+			array_shift($records);
+
+			$item = array(
+				"filename"	=> $filename,
+				"r_count"		=> count($records)
+ 			);
+
+			set_transient("latest_aff_csv_file", $item);
+
+			$history_aff_csv_file = array();
+			
+			if (get_transient("history_aff_csv_file"))
+				$history_aff_csv_file = get_transient("history_aff_csv_file");
+
+			array_push($history_aff_csv_file, $item);
+
+			set_transient("history_aff_csv_file", $history_aff_csv_file);
+
 			return;
 		}
 	}
