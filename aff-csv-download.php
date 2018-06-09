@@ -22,10 +22,13 @@ function aff_csv_upload_view() {
 	wp_enqueue_style('bootstrap-css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css');
 
 	wp_enqueue_script('jquery-datatable-js', 'https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js', array('jquery'), '1.10.16', true);
-	wp_enqueue_script('bootstrap-datatable-js', 'https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js', array('jquery'), '1.10.16', true);
-	wp_enqueue_style('bootstrap-datatable-css', 'https://cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css');
+	wp_enqueue_style('jquery-datatable-css', 'https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css');
+
+	// wp_enqueue_script('bootstrap-datatable-js', 'https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js', array('jquery'), '1.10.16', true);
+	// wp_enqueue_style('bootstrap-datatable-css', 'https://cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css');
+
 	wp_enqueue_script('datatable-js', 'https://cdn.datatables.net/select/1.2.5/js/dataTables.select.min.js', array('jquery'), '1.2.5', true);
-	wp_enqueue_style('datatable-css', 'https://cdn.datatables.net/select/1.2.5/css/select.bootstrap4.min.css');
+	wp_enqueue_style('datatable-css', 'https://cdn.datatables.net/select/1.2.5/css/select.dataTables.min.css');
 
 	wp_enqueue_script('admin.js', plugins_url('assets/js/admin.js', __FILE__), array(), '1.0.0', true);
 ?>
@@ -86,9 +89,6 @@ function aff_csv_upload_view() {
 					</tr>
 					<tbody>
 						<?php foreach ($td_tpl_list as $td_tpl) echo $td_tpl; ?>
-						<?php if (!count($td_tpl_list)) : ?>
-							<tr><td class="text-center" colspan=3>No History</td></tr>
-						<?php endif;?>
 					</tbody>
 				</thead>
 			</table>
@@ -140,9 +140,6 @@ function aff_csv_upload_view() {
 					</tr>
 					<tbody>
 						<?php foreach ($td_tpl_list as $td_tpl) echo $td_tpl; ?>
-						<?php if (!count($td_tpl_list)) : ?>
-							<tr><td class="text-center" colspan=3>No History</td></tr>
-						<?php endif;?>
 					</tbody>
 				</thead>
 			</table>
@@ -201,9 +198,21 @@ add_shortcode("aff_csv_download", function() {
 	wp_enqueue_script('bootstrap-js', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js', array('jquery'), '4.1.1', true);
 	wp_enqueue_style('bootstrap-css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css');
 
+	wp_enqueue_script('jquery-datatable-js', 'https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js', array('jquery'), '1.10.16', true);
+	// wp_enqueue_style('jquery-datatable-css', 'https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css');
+
+	wp_enqueue_script('bootstrap-datatable-js', 'https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js', array('jquery'), '1.10.16', true);
+	wp_enqueue_style('bootstrap-datatable-css', 'https://cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css');
+	
+	wp_enqueue_script('datatable-js', 'https://cdn.datatables.net/select/1.2.5/js/dataTables.select.min.js', array('jquery'), '1.2.5', true);
+	wp_enqueue_style('datatable-css', 'https://cdn.datatables.net/select/1.2.5/css/select.dataTables.min.css');
+	
+	wp_enqueue_script('datatable-button-js', 'https://cdn.datatables.net/buttons/1.5.1/js/dataTables.buttons.min.js', array('jquery'), '1.5.1', true);
+	wp_enqueue_style('datatable-button-css', 'https://cdn.datatables.net/buttons/1.5.1/css/buttons.dataTables.min.css');
+
 	wp_enqueue_script('user.js', plugins_url('assets/js/user.js', __FILE__), array('bootstrap-js'), '1.0.0', true);
 ?>
-<form id="u-aff-csv-form" enctype="multipart/form-data">
+<form class="mb-5" id="u-aff-csv-form" enctype="multipart/form-data" style="max-width: 500px;">
 	<div class="custom-file mb-3">
 		<?php if(is_user_logged_in()): ?>
 			<input type="hidden" name="user_id" value="<?php echo get_current_user_id(); ?>">
@@ -214,6 +223,19 @@ add_shortcode("aff_csv_download", function() {
 
 	<button class="btn btn-primary" type="submit">Upload</button>
 </form>
+
+<div class="container-fluid uploaded-csv-review-container d-none">
+	<style type="text/css">
+		#uploaded-csv-review table th {
+			white-space: nowrap;
+		}
+	</style>
+
+	<div id="uploaded-csv-review" class="row" style="overflow-x: auto;">
+	</div>
+
+	<button class="btn btn-primary mt-2" onclick="downloadCSV()">Download</button>
+</div>
 <?php
 });
 
@@ -247,7 +269,7 @@ function getMatchedResult($file) {
 
 	$result = array(array_shift($u_csv));
 
-	$a_file_path = wp_upload_dir()['basedir']."/aff-csv-files/uploaded/".get_transient("latest_aff_csv_file");
+	$a_file_path = wp_upload_dir()['basedir']."/aff-csv-files/uploaded/".get_transient("latest_aff_csv_file")["filename"];
 
 	if (!file_exists($a_file_path))
 		return array();
