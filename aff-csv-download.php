@@ -17,10 +17,17 @@ add_action('admin_menu', function() {
 });
 
 function aff_csv_upload_view() {
+	
 	wp_enqueue_script('bootstrap-js', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js', array('jquery'), '4.1.1', true);
 	wp_enqueue_style('bootstrap-css', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css');
 
-	wp_enqueue_script('admin.js', plugins_url('assets/js/admin.js', __FILE__), array('bootstrap-js'), '1.0.0', true);
+	wp_enqueue_script('jquery-datatable-js', 'https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js', array('jquery'), '1.10.16', true);
+	wp_enqueue_script('bootstrap-datatable-js', 'https://cdn.datatables.net/1.10.16/js/dataTables.bootstrap4.min.js', array('jquery'), '1.10.16', true);
+	wp_enqueue_style('bootstrap-datatable-css', 'https://cdn.datatables.net/1.10.16/css/dataTables.bootstrap4.min.css');
+	wp_enqueue_script('datatable-js', 'https://cdn.datatables.net/select/1.2.5/js/dataTables.select.min.js', array('jquery'), '1.2.5', true);
+	wp_enqueue_style('datatable-css', 'https://cdn.datatables.net/select/1.2.5/css/select.bootstrap4.min.css');
+
+	wp_enqueue_script('admin.js', plugins_url('assets/js/admin.js', __FILE__), array(), '1.0.0', true);
 ?>
 <div class="container-fluid">
 	<div class="row">
@@ -46,7 +53,7 @@ function aff_csv_upload_view() {
 		
 		if($h_csv_list && is_array($h_csv_list) && !empty($h_csv_list)) {
 			$idx = 0;
-			foreach ($h_csv_list as $item) {
+			foreach (array_reverse($h_csv_list) as $item) {
 				$idx++;
 
 				$target_file = implode("/", array(
@@ -69,21 +76,25 @@ function aff_csv_upload_view() {
 	<div class="row flex-column mb-5">
 		<h3 class="col-4 d-flex">Upload History</h3>
 		
-		<table class="col-3" border="1">
-			<thead>
-				<tr>
-					<th class="text-center">No</th>
-					<th class="text-center">Records</th>
-					<th class="text-center">Uploaded link</th>
-				</tr>
-				<tbody>
-					<?php foreach ($td_tpl_list as $td_tpl) echo $td_tpl; ?>
-					<?php if (!count($td_tpl_list)) : ?>
-						<tr><td class="text-center" colspan=3>No History</td></tr>
-					<?php endif;?>
-				</tbody>
-			</thead>
-		</table>
+		<div class="col-5">
+			<table class="table table-striped table-bordered">
+				<thead>
+					<tr>
+						<th class="text-center">No</th>
+						<th class="text-center">Records</th>
+						<th class="text-center">Uploaded link</th>
+					</tr>
+					<tbody>
+						<?php foreach ($td_tpl_list as $td_tpl) echo $td_tpl; ?>
+						<?php if (!count($td_tpl_list)) : ?>
+							<tr><td class="text-center" colspan=3>No History</td></tr>
+						<?php endif;?>
+					</tbody>
+				</thead>
+			</table>
+
+			<hr class="mt-5">
+		</div>
 	</div>
 
 	<?php
@@ -115,24 +126,27 @@ function aff_csv_upload_view() {
 			}
 		}
 	?>
-	<div class="row flex-column">
+
+	<div class="row flex-column mt-5">
 		<h3 class="col-4 d-flex">Download History</h3>
 		
-		<table class="col-3" border="1">
-			<thead>
-				<tr>
-					<th class="text-center">No</th>
-					<th class="text-center">User Email</th>
-					<th class="text-center">Download link</th>
-				</tr>
-				<tbody>
-					<?php foreach ($td_tpl_list as $td_tpl) echo $td_tpl; ?>
-					<?php if (!count($td_tpl_list)) : ?>
-						<tr><td class="text-center" colspan=3>No History</td></tr>
-					<?php endif;?>
-				</tbody>
-			</thead>
-		</table>
+		<div class="col-5">
+			<table class="table table-striped table-bordered">
+				<thead>
+					<tr>
+						<th class="text-center">No</th>
+						<th class="text-center">User Email</th>
+						<th class="text-center">Download link</th>
+					</tr>
+					<tbody>
+						<?php foreach ($td_tpl_list as $td_tpl) echo $td_tpl; ?>
+						<?php if (!count($td_tpl_list)) : ?>
+							<tr><td class="text-center" colspan=3>No History</td></tr>
+						<?php endif;?>
+					</tbody>
+				</thead>
+			</table>
+		</div>
 	</div>
 </div>
 <?php
